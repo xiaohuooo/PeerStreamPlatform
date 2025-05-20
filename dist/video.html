@@ -28,7 +28,8 @@
 
 <body>
 	<script type="text/javascript" src="./peer-stream.js"></script>
-
+	<button onclick="handleDisconnect()">断开</button>
+	<button onclick="handleConnect()">连接</button>
 	<video is="peer-stream" idaudio>
 		<track default kind="captions" srclang="en" />
 	</video>
@@ -117,6 +118,16 @@
 
 			ps.timeout = setTimeout(aggregateStats, 1000);
 		}
+		
+		// 连接
+		const handleConnect = () => {
+			ps.connect()
+		}
+		// 断开
+		const handleDisconnect = async () => {
+			ps.disconnect()
+		}
+
 	</script>
 </body>
 
