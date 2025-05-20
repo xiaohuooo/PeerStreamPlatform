@@ -1,0 +1,54 @@
+{
+  "PORT": 11188,
+  "auth": false,
+  "userpwd": "admin:a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+  "apiCors": false,
+  "exeUeCoolTime": 60,
+  "idleReleaseTime": 120,
+  "preloadReleaseTime": 15000,
+  "mouseReleaseTime": 0,
+  "SignalIp": "127.0.0.1",
+  "globlesetting": {
+    "WebRTCFps": 30,
+    "ResX": 1920,
+    "ResY": 1080,
+    "Unattended": true,
+    "RenderOffScreen": true,
+    "AudioMixer": true
+  },
+  "machine": [
+    {
+      "ip": "127.0.0.1",
+      "gpu": [
+        {
+          "gpucard": 0,
+          "gpumemory": 8
+        }
+      ]
+    }
+  ],
+  "ueprogram": [
+    {
+      "name": "test",
+      "path": "D:\\ue\\windows\\demo.exe",
+      "urlprefix": "test",
+      "gpumemory": "4",
+      "preload": false,
+      "param": "",
+      "machine": [],
+      "index": 1,
+      "ueversion": "5"
+    }
+  ],
+  "iceServers": [
+    {
+      "urls": [
+        "stun:stun.l.google.com:19302"
+      ],
+      "username": "1",
+      "credential": "1"
+    }
+  ],
+  "sqlite": false,
+  "allowAccess": []
+}
