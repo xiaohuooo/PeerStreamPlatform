@@ -105,6 +105,7 @@ class PeerStream extends HTMLVideoElement {
 
 		this.ws = { send() { }, close() { } }; // WebSocket
 		this.pc = { close() { } }; // RTCPeerConnection
+		this._isManualDisconnect = false; // 手动操作
 
 		this.setupVideo();
 		this.registerKeyboardEvents();
@@ -160,8 +161,45 @@ class PeerStream extends HTMLVideoElement {
 
 	}
 
+	// 手动连接
+	connect() {
+		this._isManualDisconnect = false;
+		if (this.pc.connectionState === "connected" || this.ws.readyState === WebSocket.OPEN) {
+			console.log("已连接，无需重复操作");
+			return;
+		}
+		// 复用原有连接逻辑
+		this.connectedCallback();
+	}
+
+	// 手动断开
+	disconnect() {
+		this._isManualDisconnect = true;
+		// 关闭 WebSocket
+		if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
+			this.ws.onclose = null; // 禁用自动重连
+			this.ws.close(1000, "Manual disconnect");
+		}
+
+		// 关闭 PeerConnection
+		if (this.pc && this.pc.connectionState !== "closed") {
+			this.pc.close();
+		}
+		// 清除重连定时器
+		clearTimeout(this.reconnect);
+		// 重置状态
+		this.style.pointerEvents = "none";
+		this.srcObject = null;
+		if (this.audio) this.audio.srcObject = null;
+		console.log("已手动断开连接");
+	}
 	// setupWebsocket
 	async connectedCallback() {
+		// 如果是手动断开状态，则不再自动连接
+		if (this._isManualDisconnect) {
+			this._isManualDisconnect = false;
+			return;
+		}
 		if (false == this.checkWebRTCSupport()) {
 			const overlayDiv = document.createElement('div');
 			overlayDiv.innerHTML = '你的浏览器版本过低!<br>推荐使用谷歌100以上版本浏览器!!';
@@ -199,10 +237,12 @@ class PeerStream extends HTMLVideoElement {
 		};
 
 		this.ws.onclose = (e) => {
-			console.warn(e);
-			this.dispatchEvent(new CustomEvent("playerdisconnected", {}));
-			clearTimeout(this.reconnect);
-			this.reconnect = setTimeout(() => this.connectedCallback(), 3000);
+			if (!this._isManualDisconnect) {
+				console.warn(e);
+				this.dispatchEvent(new CustomEvent("playerdisconnected", {}));
+				clearTimeout(this.reconnect);
+				this.reconnect = setTimeout(() => this.connectedCallback(), 3000);
+			}
 		};
 	}
 
@@ -328,9 +368,9 @@ class PeerStream extends HTMLVideoElement {
 					if (report.type === "transport") {
 						const finalBytesReceived = report.bytesReceived;
 						const bytesReceived = finalBytesReceived - initialBytesReceived;
-	
+
 						// 计算平均带宽（单位：字节/秒）
-						const averageReceiveBandwidth = (bytesReceived / durationInSeconds)*8/1000/1000;
+						const averageReceiveBandwidth = (bytesReceived / durationInSeconds) * 8 / 1000 / 1000;
 						msg.videoencoderqp = this.VideoEncoderQP
 						msg.netrate = averageReceiveBandwidth.toFixed(2)
 						this.ws.send(JSON.stringify(msg));
@@ -905,7 +945,11 @@ class PeerStream extends HTMLVideoElement {
 			data.setUint16(byteIdx, msg.charCodeAt(i), true);
 			byteIdx += 2;
 		}
-		this.dc.send(data);
+		if (this.dc && this.dc.send) {
+			this.dc.send(data);
+		} else {
+			this.addEventListener("playing", () => this.dc.send(data), { once: true });
+		}
 
 		return new Promise(resolve => this.addEventListener(
 			'message',
